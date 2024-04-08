@@ -17,69 +17,90 @@ using namespace std;
 
 // } Driver Code Ends
 
-vector<int> primes;
+// Constant defining the maximum size of the array
+const int maxn=1000001;
+
+// Array for marking prime numbers
+int a[maxn+1];
+
+// Vector for storing prime numbers
+vector<int> pl={2};
 
 class Solution{
 public:
+    // Function to precompute the prime numbers
     void precompute(){
-        int maxSize = 2e6 + 10;
-        vector<bool> isPrime(maxSize, 1);
-        isPrime[0] = isPrime[1] = 0;
+        // Marking all numbers as prime initially
+        for(int i=1;i<=maxn;i++)
+            a[i]=1;
         
-        primes.push_back(-1);
+        // Marking 0 and 1 as not prime
+        a[0]=a[1]=0;
         
-        for(int i = 2; i * i < maxSize; i++){
-            if(isPrime[i]){
-                for(int j = i * i; j < maxSize; j += i)
-                    isPrime[j] = 0;
+        // Sieve of Eratosthenes algorithm to mark non-prime numbers
+        for(int i=2;i*i<=maxn;i++){
+            if(a[i]==1){
+                for(int j=i*i;j<=maxn;j+=i){
+                    a[j]=0;
+                }
             }
         }
         
-        for(int i = 0; i < maxSize; i++)
-            if(isPrime[i])
-                primes.push_back(i);
-                
+        // Storing all the prime numbers in the vector
+        for(int i=3;i<=maxn;i++)
+            if(a[i])
+                pl.push_back(i);
     }
     
-    int helpSanta(int n, int m, vector<vector<int>> &g){
-        vector<int> dsu(n, -1);
+    // Depth-first search function to find the number of reachable nodes in a graph
+    int dfs(int i, vector<int> g[], vector<int> &vis){
+        // Marking the current node as visited
+        vis[i]=1;
         
-        function<int(int)> find = [&](int p) -> int {
-            if(dsu[p] < 0) return p;
-            return dsu[p] = find(dsu[p]);
-        };
+        // Counter variable to keep track of the number of reachable nodes
+        int cnt=1;
         
-        auto merge = [&](int a, int b) {
-            if(dsu[a] > dsu[b])
-                swap(a, b);
-                
-            dsu[a] += dsu[b];
-            dsu[b] = a;
-        };
-        
-        for(int i = 1; i < n + 1; i++){
-            for(auto j : g[i]){
-                int x = i - 1;
-                int y = j - 1;
-                
-                x = find(x);
-                y = find(y);
-                
-                if(x != y)
-                    merge(x, y);
+        // Recursively traversing all the adjacent nodes of the current node
+        for(auto x:g[i]){
+            if(!vis[x]){
+                cnt+=dfs(x, g, vis);
             }
         }
         
-        int nax = 1;
+        // Returning the total number of reachable nodes
+        return cnt;
+    }
+    
+    // Function to help Santa navigate the given graph
+    int helpSanta(int n, int m, vector<vector<int>> &g)
+    {
+        // Initializing the visited array
+        vector<int> vis(n+1, 0);
         
-        for(int i = 0; i < n; i++){
-            int a = find(i);
-            
-            if(dsu[a] < 0)
-                nax = max(nax, abs(dsu[a]));
+        // Creating an adjacency list for the given graph
+        vector<int> adj[n + 1];
+        for(auto i : g){
+            adj[i[0]].push_back(i[1]);
+            adj[i[1]].push_back(i[0]);
         }
         
-        return nax == 1 ? -1 : primes[nax];
+        // Variable to store the largest component size
+        int lc=0;
+        
+        // Traversing all the nodes from 0 to n and finding the largest component
+        for(int i = 0; i <= n; i++){
+            if(!vis[i]){
+                lc=max(lc,dfs(i, adj, vis));
+            }
+        }
+        
+        // Checking if there is only one component in the graph
+        // If yes, returning -1
+        if(lc==1)
+            return -1;
+        
+        // Returning the prime number at the (largest component size - 1) index
+        return pl[lc-1];
     }
 };
 
